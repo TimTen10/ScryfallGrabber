@@ -4,6 +4,9 @@ import json
 
 def _fill_template(card):
     card_template = {}
+    # We only need:
+    # name, mana_cost, cmc, type_line, oracle_text, power, toughness,
+    # colors, color_identity, keywords, rarity, flavor_text
     values = [
         'name', 'mana_cost', 'cmc', 'type_line', 'oracle_text', 'power', 'toughness',
         'colors', 'color_identity', 'keywords', 'rarity', 'flavor_text'
@@ -18,25 +21,40 @@ def _fill_template(card):
     return card_template
 
 
-def scryfall_search(search_term):
-    resp = requests.get('https://api.scryfall.com/cards/search', params={'q': search_term})
+def scryfall_search(search_term=None, page_uri=None, partial_data=None):
+    if search_term:
+        resp = requests.get('https://api.scryfall.com/cards/search', params={'q': search_term})
+    else:
+        resp = requests.get(page_uri)
+
     if resp.status_code == 200:
+        # res = resp.json()
+        # res_data = {'cards': []}
+        # for card in res['data']:
+        #     res_data['cards'].append(_fill_template(card))
+        # return res_data
+
         res = resp.json()
-        res_data = {'cards': []}
+        if not partial_data:
+            res_data = {'cards': []}
+        else:
+            res_data = partial_data
         for card in res['data']:
             res_data['cards'].append(_fill_template(card))
-        return res_data
+        if res['has_more']:
+            return scryfall_search(page_uri=res['next_page'], partial_data=res_data)
+        else:
+            return res_data
+
     else:
         print(f'Something went wrong when trying to communicate with the API: {resp.status_code}')
         print(resp.url)
 
 
 def save_results(data, filename):
-    # We only need:
-    # name, mana_cost, cmc, type_line, oracle_text, power, toughness,
-    # colors, color_identity, keywords, rarity, flavor_text
     with open(f'dataset/{filename}.json', 'w') as json_file:
         json.dump(data, json_file)
+        print(len(data['cards']))
 
 
 def cardsearch():
@@ -44,7 +62,7 @@ def cardsearch():
     print('Input your search.')
     search_term = input()
     # res is in json format (it's a Python dict - see {'cards': []} for list content see _fill_template(card))
-    res = scryfall_search(search_term)
+    res = scryfall_search(search_term=search_term)
     save_results(res, 'search_test')
 
 
