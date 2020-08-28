@@ -24,8 +24,10 @@ def _fill_template(card):
 def scryfall_search(search_term=None, page_uri=None, partial_data=None):
     if search_term:
         resp = requests.get('https://api.scryfall.com/cards/search', params={'q': search_term})
+        res_data = {'cards': []}
     else:
         resp = requests.get(page_uri)
+        res_data = partial_data
 
     if resp.status_code == 200:
         # res = resp.json()
@@ -35,10 +37,6 @@ def scryfall_search(search_term=None, page_uri=None, partial_data=None):
         # return res_data
 
         res = resp.json()
-        if not partial_data:
-            res_data = {'cards': []}
-        else:
-            res_data = partial_data
         for card in res['data']:
             res_data['cards'].append(_fill_template(card))
         if res['has_more']:
@@ -54,7 +52,6 @@ def scryfall_search(search_term=None, page_uri=None, partial_data=None):
 def save_results(data, filename):
     with open(f'dataset/{filename}.json', 'w') as json_file:
         json.dump(data, json_file)
-        print(len(data['cards']))
 
 
 def cardsearch():
